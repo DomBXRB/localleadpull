@@ -25,14 +25,16 @@ jobs:
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
-      - name: Deploy public_html to Hostinger via SFTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          protocol: ftps
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: 21
-          local-dir: ./public_html/
-          server-dir: /public_html/
-          dangerous-clean-slate: false
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p 65002 localleadpull.com >> ~/.ssh/known_hosts
+
+      - name: Deploy public_html to Hostinger via rsync
+        run: |
+          rsync -avz --delete \
+            -e "ssh -p 65002 -i ~/.ssh/id_rsa" \
+            ./public_html/ \
+            u392478750@localleadpull.com:~/public_html/
