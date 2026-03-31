@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 
+const API_BASE = process.env.REACT_APP_API_URL || '';
+
 const NICHES = [
   'HVAC',
   'Plumbing',
@@ -101,7 +103,7 @@ export default function App() {
 
   const handleDownloadAfterPayment = useCallback(async (sessionId) => {
     try {
-      const res = await fetch(`/api/download?session_id=${sessionId}`);
+      const res = await fetch(`${API_BASE}/api/download?session_id=${sessionId}`);
       if (!res.ok) {
         const data = await res.json();
         setError(data.error || 'Download failed. Please contact support.');
@@ -150,7 +152,7 @@ export default function App() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ niche, city: city.trim(), state });
-      const res = await fetch(`/api/search?${params}`);
+      const res = await fetch(`${API_BASE}/api/search?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Search failed');
       setResults(data.preview);
@@ -168,7 +170,7 @@ export default function App() {
     setCheckoutLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/checkout', {
+      const res = await fetch(`${API_BASE}/api/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ searchKey, niche, city, state }),
