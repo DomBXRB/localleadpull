@@ -29,7 +29,9 @@ jobs:
         run: sudo apt-get install -y sshpass
 
       - name: Add host to known_hosts
-        run: ssh-keyscan -p 65002 localleadpull.com >> ~/.ssh/known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p 65002 localleadpull.com >> ~/.ssh/known_hosts
 
       - name: Deploy public_html to Hostinger via rsync
         run: |
