@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist)",
+      "Bash(tasklist /FI 'IMAGENAME eq node.exe')",
+      "Bash(kill 60520)",
+      "Bash(npm run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
