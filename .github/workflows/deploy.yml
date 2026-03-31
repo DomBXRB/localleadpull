@@ -25,16 +25,15 @@ jobs:
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
-      - name: Set up SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p 65002 localleadpull.com >> ~/.ssh/known_hosts
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+
+      - name: Add host to known_hosts
+        run: ssh-keyscan -p 65002 localleadpull.com >> ~/.ssh/known_hosts
 
       - name: Deploy public_html to Hostinger via rsync
         run: |
-          rsync -avz --delete \
-            -e "ssh -p 65002 -i ~/.ssh/id_rsa" \
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" rsync -avz --delete \
+            -e "ssh -p 65002 -o StrictHostKeyChecking=no" \
             ./public_html/ \
             u392478750@localleadpull.com:~/public_html/
