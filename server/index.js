@@ -23,7 +23,21 @@ function pruneCache() {
 }
 setInterval(pruneCache, 10 * 60 * 1000);
 
-app.use(cors());
+const allowedOrigins = [
+  'https://localleadpull.com',
+  'https://www.localleadpull.com',
+  'http://localhost:3000',
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
+}));
 app.use(express.json());
 
 // ─── Search ─────────────────────────────────────────────────────────────────
