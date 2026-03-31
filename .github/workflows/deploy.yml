@@ -25,12 +25,14 @@ jobs:
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
-      - name: Deploy public_html to Hostinger via FTP
+      - name: Deploy public_html to Hostinger via SFTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
+          protocol: sftp
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          port: 22
           local-dir: ./public_html/
           server-dir: /public_html/
           dangerous-clean-slate: false
