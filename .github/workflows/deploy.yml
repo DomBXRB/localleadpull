@@ -28,11 +28,11 @@ jobs:
       - name: Deploy public_html to Hostinger via SFTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          protocol: sftp
+          protocol: ftps
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          port: 22
+          port: 21
           local-dir: ./public_html/
           server-dir: /public_html/
           dangerous-clean-slate: false
