@@ -605,12 +605,18 @@ body {
 /* ─── Availability Notice ───────────────────────────────────────────────── */
 .availability-notice {
   background: var(--card);
-  border: 1px solid rgba(59,130,246,.3);
+  border: 1px solid rgba(251,191,36,.25);
   border-radius: var(--radius);
   padding: 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+}
+
+.availability-warning {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fbbf24;
 }
 
 .availability-msg {
@@ -621,10 +627,23 @@ body {
 
 .availability-msg strong { color: #fff; }
 
+.availability-refund {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.availability-confirm-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .availability-actions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  margin-top: 4px;
 }
 
 /* ─── Ghost Button ──────────────────────────────────────────────────────── */

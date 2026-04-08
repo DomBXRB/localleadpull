@@ -141,7 +141,7 @@ export default function App() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [tierLoading, setTierLoading] = useState(false);
-  const [availabilityResult, setAvailabilityResult] = useState(null);
+  const [pendingTier, setPendingTier] = useState(null); // { requestedCount, price, available }
   const [confirming, setConfirming] = useState(false);
 
   const [isAdmin] = useState(() => {
@@ -201,7 +201,7 @@ export default function App() {
     setError('');
     setSuccessMessage('');
     setResults(null);
-    setAvailabilityResult(null);
+    setPendingTier(null);
     setConfirming(false);
     setLoading(true);
     try {
@@ -237,11 +237,11 @@ export default function App() {
     }
   }
 
-  async function handleSelectTier(requestedCount) {
+  async function handleSelectTier(requestedCount, price) {
     if (!searchKey) return;
     setTierLoading(true);
     setError('');
-    setAvailabilityResult(null);
+    setPendingTier(null);
     setConfirming(false);
     try {
       const res = await fetch(`${API_BASE}/api/check-availability`, {
@@ -254,7 +254,7 @@ export default function App() {
       if (data.sufficient) {
         await handleCheckout(requestedCount);
       } else {
-        setAvailabilityResult(data);
+        setPendingTier({ requestedCount, price, available: data.available });
         setConfirming(true);
       }
     } catch (err) {
@@ -490,7 +490,7 @@ export default function App() {
                       <button
                         key={count}
                         className="tier-btn"
-                        onClick={() => handleSelectTier(count)}
+                        onClick={() => handleSelectTier(count, price)}
                         disabled={tierLoading || checkoutLoading}
                       >
                         {tierLoading
@@ -505,28 +505,33 @@ export default function App() {
                 </div>
               )}
 
-              {confirming && availabilityResult && (
+              {confirming && pendingTier && (
                 <div className="availability-notice">
+                  <p className="availability-warning">⚠️ Only {pendingTier.available} leads found in {city}, {state} for {niche}.</p>
                   <p className="availability-msg">
-                    Only <strong>{availabilityResult.available} leads</strong> found in this city
-                    — adjusted price <strong>${availabilityResult.price / 100}</strong>
+                    You selected {pendingTier.requestedCount} leads but only {pendingTier.available} are available.
+                    You will be charged <strong>${pendingTier.price}</strong> and receive all {pendingTier.available} leads.
                   </p>
+                  <p className="availability-refund">
+                    All sales are final. No refunds will be issued once payment is processed and your CSV is delivered.
+                  </p>
+                  <p className="availability-confirm-label">Do you want to continue?</p>
                   <div className="availability-actions">
                     <button
+                      className="btn btn--ghost"
+                      onClick={() => { setConfirming(false); setPendingTier(null); }}
+                      disabled={checkoutLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
                       className="btn btn--primary"
-                      onClick={() => handleCheckout(availabilityResult.actualCount)}
+                      onClick={() => handleCheckout(pendingTier.requestedCount)}
                       disabled={checkoutLoading}
                     >
                       {checkoutLoading
                         ? <span className="btn-inner"><span className="spinner spinner--white" />Redirecting…</span>
-                        : `Confirm — $${availabilityResult.price / 100}`}
-                    </button>
-                    <button
-                      className="btn btn--ghost"
-                      onClick={() => { setConfirming(false); setAvailabilityResult(null); }}
-                      disabled={checkoutLoading}
-                    >
-                      Cancel
+                        : `Yes, Continue — $${pendingTier.price}`}
                     </button>
                   </div>
                 </div>

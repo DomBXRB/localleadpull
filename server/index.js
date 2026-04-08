@@ -194,7 +194,7 @@ app.post('/api/checkout', async (req, res) => {
   }
 
   const actualCount = Math.min(results.length, requestedCount);
-  const amount = calculatePrice(actualCount);
+  const amount = calculatePrice(requestedCount);
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
   try {
@@ -208,7 +208,7 @@ app.post('/api/checkout', async (req, res) => {
             unit_amount: amount,
             product_data: {
               name: `LocalLeadPull — ${niche} in ${city}, ${state} (${actualCount} leads)`,
-              description: `Full CSV of local ${niche} businesses in ${city}, ${state}`,
+              description: `All sales final. CSV delivered instantly.`,
             },
           },
           quantity: 1,
