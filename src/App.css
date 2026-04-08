@@ -545,26 +545,37 @@ body {
   color: rgba(255,255,255,.7);
 }
 
-/* ─── Inline Pricing (post-results) ────────────────────────────────────── */
-.inline-pricing {
-  margin-top: 8px;
+/* ─── CTA Box (post-results) ────────────────────────────────────────────── */
+.cta-box {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #2563eb 100%);
+  border: 1px solid rgba(59,130,246,.3);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
 }
-.inline-pricing-title {
-  font-size: 1.4rem;
+.cta-box-headline {
+  font-size: 20px;
   font-weight: 700;
-  text-align: center;
-  margin-bottom: 28px;
   color: #fff;
+  margin-bottom: 6px;
+}
+.cta-box-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,.7);
 }
 
-/* ─── Pricing Section ───────────────────────────────────────────────────── */
-.pricing-section {
+/* ─── Features Section ──────────────────────────────────────────────────── */
+.features-section {
   background: #111;
   border-top: 1px solid var(--border);
   padding: 80px 0 96px;
 }
 
-.pricing-grid {
+.features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
@@ -572,100 +583,40 @@ body {
   margin: 0 auto;
 }
 
-.pricing-card {
+.feature-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 32px 28px 28px;
+  padding: 32px 28px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  position: relative;
-  transition: box-shadow .15s, border-color .15s;
-}
-.pricing-card:hover {
-  box-shadow: var(--shadow-lg);
-  border-color: #3a3a3a;
-}
-
-.pricing-card--featured {
-  border-color: var(--blue);
-  background: #161c2d;
-  box-shadow: 0 0 0 1px var(--blue), var(--shadow-lg);
-}
-.pricing-card--featured:hover {
-  box-shadow: 0 0 0 1px var(--blue), 0 8px 40px rgba(59,130,246,.2);
-}
-
-.savings-badge {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--blue);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 12px;
-  border-radius: 999px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.plan-header {
+  gap: 14px;
   text-align: center;
+  align-items: center;
 }
 
-.plan-price {
-  font-size: 3rem;
-  font-weight: 800;
-  color: #fff;
-  line-height: 1;
-  margin-bottom: 6px;
-}
-.plan-dollar {
-  font-size: 1.5rem;
-  font-weight: 600;
-  vertical-align: super;
-  color: var(--text-muted);
-  margin-right: 2px;
-}
-
-.plan-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.plan-meta {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.plan-features {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex: 1;
-}
-.plan-features li {
+.feature-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: rgba(59,130,246,.1);
+  border: 1px solid rgba(59,130,246,.2);
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  color: var(--text-muted);
-}
-.check-icon {
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.plan-btn {
-  width: 100%;
-  height: 46px;
-  margin-top: 4px;
+.feature-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.feature-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
 }
 
 /* ─── Footer ────────────────────────────────────────────────────────────── */
@@ -704,8 +655,7 @@ body {
   .steps-row { gap: 0; }
   .step { padding: 20px 16px; min-width: 120px; }
   .step-connector { display: none; }
-  .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
-  .pricing-card--featured { order: -1; }
+  .features-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
 }
 
 @media (max-width: 600px) {
@@ -721,6 +671,6 @@ body {
   .step { max-width: 100%; width: 100%; }
 }
 
-@media (max-width: 480px) {
-  .pricing-grid { grid-template-columns: 1fr; }
+@media (max-width: 600px) {
+  .cta-box { flex-direction: column; align-items: flex-start; }
 }

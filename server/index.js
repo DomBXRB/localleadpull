@@ -121,27 +121,21 @@ app.get('/api/search', async (req, res) => {
 });
 
 // ─── Stripe Checkout ─────────────────────────────────────────────────────────
-const PLAN_PRICES = {
-  starter: { amount: 500,  label: 'Starter' },
-  pro:     { amount: 1900, label: 'Pro' },
-  agency:  { amount: 4900, label: 'Agency' },
-};
-
 app.post('/api/checkout', async (req, res) => {
-  const { searchKey, niche, city, state, plan } = req.body;
+  const { searchKey, niche, city, state } = req.body;
 
   if (!searchKey || !cache.has(searchKey)) {
     return res.status(400).json({ error: 'Search results expired. Please search again.' });
   }
 
-  const planId = plan && PLAN_PRICES[plan] ? plan : 'starter';
-  const { amount, label } = PLAN_PRICES[planId];
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-
   const { results } = cache.get(searchKey);
+
   if (results.length <= 3) {
     return res.status(400).json({ error: 'No additional leads to unlock.' });
   }
+
+  const amount = Math.max(500, Math.round(results.length * 40));
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -153,7 +147,7 @@ app.post('/api/checkout', async (req, res) => {
             currency: 'usd',
             unit_amount: amount,
             product_data: {
-              name: `LocalLeadPull ${label} — ${niche} in ${city}, ${state} (${results.length} leads)`,
+              name: `LocalLeadPull — ${niche} in ${city}, ${state} (${results.length} leads)`,
               description: `Full CSV of local ${niche} businesses in ${city}, ${state}`,
             },
           },
@@ -161,7 +155,7 @@ app.post('/api/checkout', async (req, res) => {
         },
       ],
       mode: 'payment',
-      metadata: { searchKey, plan: planId },
+      metadata: { searchKey },
       success_url: `${clientUrl}?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientUrl}?canceled=true`,
     });

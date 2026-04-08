@@ -16,33 +16,6 @@ const US_STATES = [
   'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
 ];
 
-const PLANS = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: 5,
-    leads: 20,
-    savings: null,
-    features: ['Single niche + city', 'CSV download', 'Instant delivery'],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 19,
-    leads: 100,
-    savings: 24,
-    features: ['Any niche + city', 'CSV download', 'Instant delivery', 'Save 24%'],
-    featured: true,
-  },
-  {
-    id: 'agency',
-    name: 'Agency',
-    price: 49,
-    leads: 400,
-    savings: 51,
-    features: ['Any niche + city', 'CSV download', 'Instant delivery', 'Save 51%'],
-  },
-];
 
 function Logo() {
   return (
@@ -167,7 +140,6 @@ export default function App() {
   const [totalCount, setTotalCount] = useState(0);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState('starter');
 
   const [isAdmin] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -242,8 +214,7 @@ export default function App() {
     }
   }
 
-  async function handleCheckout(planId) {
-    const plan = planId || selectedPlan;
+  async function handleCheckout() {
     if (totalCount <= 3) {
       setError('No additional leads to unlock.');
       return;
@@ -258,7 +229,7 @@ export default function App() {
       const res = await fetch(`${API_BASE}/api/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ searchKey, niche, city, state, plan }),
+        body: JSON.stringify({ searchKey, niche, city, state }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Checkout failed');
@@ -305,6 +276,7 @@ export default function App() {
   }
 
   const lockedCount = Math.min(3, Math.max(0, totalCount - 3));
+  const price = Math.max(5, Math.round(totalCount * 0.40));
 
   return (
     <div className="app">
@@ -484,44 +456,22 @@ export default function App() {
               </div>
 
               {totalCount > 3 && !isAdmin && (
-                <div className="inline-pricing">
-                  <h3 className="inline-pricing-title">Unlock all {totalCount} leads</h3>
-                  <div className="pricing-grid">
-                    {PLANS.map(plan => (
-                      <div
-                        key={plan.id}
-                        className={`pricing-card${plan.featured ? ' pricing-card--featured' : ''}`}
-                      >
-                        {plan.savings && (
-                          <div className="savings-badge">Save {plan.savings}%</div>
-                        )}
-                        <div className="plan-header">
-                          <div className="plan-price">
-                            <span className="plan-dollar">$</span>{plan.price}
-                          </div>
-                          <div className="plan-name">{plan.name}</div>
-                          <div className="plan-meta">{plan.leads} leads</div>
-                        </div>
-                        <ul className="plan-features">
-                          {plan.features.map((f, i) => (
-                            <li key={i}>
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="check-icon" aria-hidden="true">
-                                <path d="M3 8l3.5 3.5L13 5" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                              {f}
-                            </li>
-                          ))}
-                        </ul>
-                        <button
-                          className="btn btn--primary plan-btn"
-                          onClick={() => handleCheckout(plan.id)}
-                          disabled={checkoutLoading}
-                        >
-                          {checkoutLoading && selectedPlan === plan.id ? 'Redirecting…' : 'Buy Now'}
-                        </button>
-                      </div>
-                    ))}
+                <div className="cta-box">
+                  <div className="cta-box-body">
+                    <p className="cta-box-headline">Get all {totalCount} leads — ${price}</p>
+                    <p className="cta-box-sub">
+                      Name, phone, website, rating, address — clean CSV, instant download
+                    </p>
                   </div>
+                  <button
+                    className="btn btn--cta"
+                    onClick={handleCheckout}
+                    disabled={checkoutLoading}
+                  >
+                    {checkoutLoading
+                      ? <span className="btn-inner"><span className="spinner spinner--white" />Redirecting…</span>
+                      : `Download CSV — $${price}`}
+                  </button>
                 </div>
               )}
             </div>
@@ -529,52 +479,43 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── PRICING ────────────────────────────────────────────── */}
-      <section className="pricing-section" ref={pricingRef} id="pricing">
+      {/* ── WHAT YOU GET ───────────────────────────────────────── */}
+      <section className="features-section" ref={pricingRef} id="pricing">
         <div className="section-inner">
-          <h2 className="section-title">Simple Pricing</h2>
-          <div className="pricing-grid">
-            {PLANS.map(plan => (
-              <div
-                key={plan.id}
-                className={`pricing-card${plan.featured ? ' pricing-card--featured' : ''}`}
-              >
-                {plan.savings && (
-                  <div className="savings-badge">Save {plan.savings}%</div>
-                )}
-                <div className="plan-header">
-                  <div className="plan-price">
-                    <span className="plan-dollar">$</span>{plan.price}
-                  </div>
-                  <div className="plan-name">{plan.name}</div>
-                  <div className="plan-meta">{plan.leads} leads</div>
-                </div>
-                <ul className="plan-features">
-                  {plan.features.map((f, i) => (
-                    <li key={i}>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="check-icon" aria-hidden="true">
-                        <path d="M3 8l3.5 3.5L13 5" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  className="btn btn--primary plan-btn"
-                  onClick={() => {
-                    setSelectedPlan(plan.id);
-                    if (searchKey) {
-                      handleCheckout(plan.id);
-                    } else {
-                      scrollToTool();
-                    }
-                  }}
-                  disabled={checkoutLoading}
-                >
-                  {checkoutLoading && selectedPlan === plan.id ? 'Redirecting…' : 'Buy Now'}
-                </button>
+          <h2 className="section-title">What You Get</h2>
+          <div className="features-grid">
+
+            <div className="feature-card">
+              <div className="feature-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
+                  <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.3 3.9a1 1 0 01-.23 1.02L8.3 10.6a11 11 0 005.1 5.1l1.98-1.97a1 1 0 011.02-.24l3.9 1.3a1 1 0 01.68.95V19a2 2 0 01-2 2C9.4 21 3 14.6 3 7V5z" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </div>
-            ))}
+              <h3 className="feature-title">Verified Phone Numbers</h3>
+              <p className="feature-desc">Direct lines pulled straight from Google — ready to dial</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
+                  <circle cx="12" cy="12" r="9" stroke="#3B82F6" strokeWidth="2" />
+                  <path d="M12 3c0 0-4 3.5-4 9s4 9 4 9M12 3c0 0 4 3.5 4 9s-4 9-4 9M3 12h18" stroke="#3B82F6" strokeWidth="2" />
+                </svg>
+              </div>
+              <h3 className="feature-title">Website URLs</h3>
+              <p className="feature-desc">Every business's site for quick research before you call</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#3B82F6" strokeWidth="2" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h3 className="feature-title">Google Ratings</h3>
+              <p className="feature-desc">Star ratings and review counts so you can target the best prospects</p>
+            </div>
+
           </div>
         </div>
       </section>
