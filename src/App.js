@@ -140,6 +140,9 @@ export default function App() {
   const [totalCount, setTotalCount] = useState(0);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [tierLoading, setTierLoading] = useState(false);
+  const [availabilityResult, setAvailabilityResult] = useState(null);
+  const [confirming, setConfirming] = useState(false);
 
   const [isAdmin] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -198,6 +201,8 @@ export default function App() {
     setError('');
     setSuccessMessage('');
     setResults(null);
+    setAvailabilityResult(null);
+    setConfirming(false);
     setLoading(true);
     try {
       const params = new URLSearchParams({ niche, city: city.trim(), state });
@@ -214,22 +219,14 @@ export default function App() {
     }
   }
 
-  async function handleCheckout() {
-    if (totalCount <= 3) {
-      setError('No additional leads to unlock.');
-      return;
-    }
-    if (!searchKey) {
-      toolRef.current?.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
+  async function handleCheckout(requestedCount) {
     setCheckoutLoading(true);
     setError('');
     try {
       const res = await fetch(`${API_BASE}/api/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ searchKey, niche, city, state }),
+        body: JSON.stringify({ searchKey, niche, city, state, requestedCount }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Checkout failed');
@@ -237,6 +234,33 @@ export default function App() {
     } catch (err) {
       setError(err.message);
       setCheckoutLoading(false);
+    }
+  }
+
+  async function handleSelectTier(requestedCount) {
+    if (!searchKey) return;
+    setTierLoading(true);
+    setError('');
+    setAvailabilityResult(null);
+    setConfirming(false);
+    try {
+      const res = await fetch(`${API_BASE}/api/check-availability`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchKey, requestedCount }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Availability check failed');
+      if (data.sufficient) {
+        await handleCheckout(requestedCount);
+      } else {
+        setAvailabilityResult(data);
+        setConfirming(true);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTierLoading(false);
     }
   }
 
@@ -276,7 +300,6 @@ export default function App() {
   }
 
   const lockedCount = Math.min(3, Math.max(0, totalCount - 3));
-  const price = Math.max(5, Math.round(totalCount * 0.40));
 
   return (
     <div className="app">
@@ -455,23 +478,57 @@ export default function App() {
                 ))}
               </div>
 
-              {totalCount > 3 && !isAdmin && (
-                <div className="cta-box">
-                  <div className="cta-box-body">
-                    <p className="cta-box-headline">Get all {totalCount} leads — ${price}</p>
-                    <p className="cta-box-sub">
-                      Name, phone, website, rating, address — clean CSV, instant download
-                    </p>
+              {totalCount > 3 && !isAdmin && !confirming && (
+                <div className="tier-picker">
+                  <p className="tier-picker-label">How many leads do you want?</p>
+                  <div className="tier-row">
+                    {[
+                      { count: 20,  price: 5  },
+                      { count: 50,  price: 15 },
+                      { count: 100, price: 25 },
+                    ].map(({ count, price }) => (
+                      <button
+                        key={count}
+                        className="tier-btn"
+                        onClick={() => handleSelectTier(count)}
+                        disabled={tierLoading || checkoutLoading}
+                      >
+                        {tierLoading
+                          ? <span className="tier-spinner"><span className="spinner" /></span>
+                          : <>
+                              <span className="tier-count">{count} Leads</span>
+                              <span className="tier-price">${price}</span>
+                            </>}
+                      </button>
+                    ))}
                   </div>
-                  <button
-                    className="btn btn--cta"
-                    onClick={handleCheckout}
-                    disabled={checkoutLoading}
-                  >
-                    {checkoutLoading
-                      ? <span className="btn-inner"><span className="spinner spinner--white" />Redirecting…</span>
-                      : `Download CSV — $${price}`}
-                  </button>
+                </div>
+              )}
+
+              {confirming && availabilityResult && (
+                <div className="availability-notice">
+                  <p className="availability-msg">
+                    Only <strong>{availabilityResult.available} leads</strong> found in this city
+                    — adjusted price <strong>${availabilityResult.price / 100}</strong>
+                  </p>
+                  <div className="availability-actions">
+                    <button
+                      className="btn btn--primary"
+                      onClick={() => handleCheckout(availabilityResult.actualCount)}
+                      disabled={checkoutLoading}
+                    >
+                      {checkoutLoading
+                        ? <span className="btn-inner"><span className="spinner spinner--white" />Redirecting…</span>
+                        : `Confirm — $${availabilityResult.price / 100}`}
+                    </button>
+                    <button
+                      className="btn btn--ghost"
+                      onClick={() => { setConfirming(false); setAvailabilityResult(null); }}
+                      disabled={checkoutLoading}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -479,46 +536,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── WHAT YOU GET ───────────────────────────────────────── */}
-      <section className="features-section" ref={pricingRef} id="pricing">
-        <div className="section-inner">
-          <h2 className="section-title">What You Get</h2>
-          <div className="features-grid">
-
-            <div className="feature-card">
-              <div className="feature-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
-                  <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.3 3.9a1 1 0 01-.23 1.02L8.3 10.6a11 11 0 005.1 5.1l1.98-1.97a1 1 0 011.02-.24l3.9 1.3a1 1 0 01.68.95V19a2 2 0 01-2 2C9.4 21 3 14.6 3 7V5z" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <h3 className="feature-title">Verified Phone Numbers</h3>
-              <p className="feature-desc">Direct lines pulled straight from Google — ready to dial</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
-                  <circle cx="12" cy="12" r="9" stroke="#3B82F6" strokeWidth="2" />
-                  <path d="M12 3c0 0-4 3.5-4 9s4 9 4 9M12 3c0 0 4 3.5 4 9s-4 9-4 9M3 12h18" stroke="#3B82F6" strokeWidth="2" />
-                </svg>
-              </div>
-              <h3 className="feature-title">Website URLs</h3>
-              <p className="feature-desc">Every business's site for quick research before you call</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#3B82F6" strokeWidth="2" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <h3 className="feature-title">Google Ratings</h3>
-              <p className="feature-desc">Star ratings and review counts so you can target the best prospects</p>
-            </div>
-
-          </div>
-        </div>
-      </section>
 
       {/* ── FOOTER ─────────────────────────────────────────────── */}
       <footer className="footer">

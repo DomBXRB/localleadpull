@@ -40,6 +40,30 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// ─── Price tiers (returns cents) ─────────────────────────────────────────────
+function calculatePrice(count) {
+  if (count <= 20)  return 500;
+  if (count <= 50)  return 1500;
+  return 2500;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+const FIELD_MASK = [
+  'places.id',
+  'places.displayName',
+  'places.formattedAddress',
+  'places.nationalPhoneNumber',
+  'places.internationalPhoneNumber',
+  'places.websiteUri',
+  'places.rating',
+  'places.userRatingCount',
+  'places.businessStatus',
+  'nextPageToken',
+].join(',');
+
 // ─── Search ─────────────────────────────────────────────────────────────────
 app.get('/api/search', async (req, res) => {
   const { niche, city, state } = req.query;
@@ -55,36 +79,45 @@ app.get('/api/search', async (req, res) => {
 
   try {
     const textQuery = `${niche} in ${city}, ${state}`;
+    const allPlaces = [];
+    let pageToken = null;
 
-    const response = await axios.post(
-      'https://places.googleapis.com/v1/places:searchText',
-      {
-        textQuery,
-        maxResultCount: 20,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': [
-            'places.id',
-            'places.displayName',
-            'places.formattedAddress',
-            'places.nationalPhoneNumber',
-            'places.internationalPhoneNumber',
-            'places.websiteUri',
-            'places.rating',
-            'places.userRatingCount',
-            'places.businessStatus',
-          ].join(','),
-        },
+    do {
+      const body = { textQuery };
+      if (pageToken) {
+        body.pageToken = pageToken;
       }
-    );
 
-    const places = response.data.places || [];
+      const response = await axios.post(
+        'https://places.googleapis.com/v1/places:searchText',
+        body,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': FIELD_MASK,
+          },
+        }
+      );
 
-    const results = places
-      .filter(p => p.businessStatus !== 'CLOSED_PERMANENTLY')
+      const places = response.data.places || [];
+      allPlaces.push(...places);
+      pageToken = response.data.nextPageToken || null;
+
+      if (pageToken && allPlaces.length < 100) {
+        await sleep(2000);
+      }
+    } while (pageToken && allPlaces.length < 100);
+
+    // Deduplicate by place id, filter closed
+    const seen = new Set();
+    const results = allPlaces
+      .filter(p => {
+        if (p.businessStatus === 'CLOSED_PERMANENTLY') return false;
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      })
       .map(p => ({
         placeId: p.id,
         name: p.displayName?.text || '',
@@ -120,9 +153,31 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
+// ─── Check Availability ───────────────────────────────────────────────────────
+app.post('/api/check-availability', (req, res) => {
+  const { searchKey, requestedCount } = req.body;
+
+  if (!searchKey || !cache.has(searchKey)) {
+    return res.status(400).json({ error: 'Search results expired. Please search again.' });
+  }
+
+  const { results } = cache.get(searchKey);
+  const available = results.length;
+  const actualCount = Math.min(available, requestedCount);
+  const price = calculatePrice(actualCount);
+
+  res.json({
+    available,
+    requestedCount,
+    actualCount,
+    price,
+    sufficient: available >= requestedCount,
+  });
+});
+
 // ─── Stripe Checkout ─────────────────────────────────────────────────────────
 app.post('/api/checkout', async (req, res) => {
-  const { searchKey, niche, city, state } = req.body;
+  const { searchKey, niche, city, state, requestedCount } = req.body;
 
   if (!searchKey || !cache.has(searchKey)) {
     return res.status(400).json({ error: 'Search results expired. Please search again.' });
@@ -134,7 +189,8 @@ app.post('/api/checkout', async (req, res) => {
     return res.status(400).json({ error: 'No additional leads to unlock.' });
   }
 
-  const amount = Math.max(500, Math.round(results.length * 40));
+  const actualCount = Math.min(results.length, requestedCount || results.length);
+  const amount = calculatePrice(actualCount);
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
   try {
@@ -147,7 +203,7 @@ app.post('/api/checkout', async (req, res) => {
             currency: 'usd',
             unit_amount: amount,
             product_data: {
-              name: `LocalLeadPull — ${niche} in ${city}, ${state} (${results.length} leads)`,
+              name: `LocalLeadPull — ${niche} in ${city}, ${state} (${actualCount} leads)`,
               description: `Full CSV of local ${niche} businesses in ${city}, ${state}`,
             },
           },
@@ -155,7 +211,7 @@ app.post('/api/checkout', async (req, res) => {
         },
       ],
       mode: 'payment',
-      metadata: { searchKey },
+      metadata: { searchKey, requestedCount: String(actualCount) },
       success_url: `${clientUrl}?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientUrl}?canceled=true`,
     });
@@ -190,7 +246,11 @@ app.get('/api/download', async (req, res) => {
     }
 
     const { results, niche, city, state } = cache.get(searchKey);
-    sendCsv(res, results, niche, city, state);
+    const count = session.metadata?.requestedCount
+      ? parseInt(session.metadata.requestedCount, 10)
+      : null;
+
+    sendCsv(res, results, niche, city, state, count);
   } catch (err) {
     console.error('Download error:', err.message);
     res.status(500).json({ error: err.message });
@@ -210,14 +270,16 @@ app.get('/api/admin-download', (req, res) => {
   }
 
   const { results, niche, city, state } = cache.get(search_key);
-  sendCsv(res, results, niche, city, state);
+  sendCsv(res, results, niche, city, state, null);
 });
 
 // ─── CSV helper ──────────────────────────────────────────────────────────────
-function sendCsv(res, results, niche, city, state) {
+function sendCsv(res, results, niche, city, state, count) {
+  const rows = count != null ? results.slice(0, count) : results;
+
   const csvRows = [
     ['Business Name', 'Phone', 'Website', 'Google Rating', 'Reviews', 'Address'],
-    ...results.map(r => [
+    ...rows.map(r => [
       `"${(r.name || '').replace(/"/g, '""')}"`,
       `"${(r.phone || '').replace(/"/g, '""')}"`,
       `"${(r.website || '').replace(/"/g, '""')}"`,
