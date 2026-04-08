@@ -183,13 +183,17 @@ app.post('/api/checkout', async (req, res) => {
     return res.status(400).json({ error: 'Search results expired. Please search again.' });
   }
 
+  if (!requestedCount || requestedCount < 1) {
+    return res.status(400).json({ error: 'requestedCount is required.' });
+  }
+
   const { results } = cache.get(searchKey);
 
   if (results.length <= 3) {
     return res.status(400).json({ error: 'No additional leads to unlock.' });
   }
 
-  const actualCount = Math.min(results.length, requestedCount || results.length);
+  const actualCount = Math.min(results.length, requestedCount);
   const amount = calculatePrice(actualCount);
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
