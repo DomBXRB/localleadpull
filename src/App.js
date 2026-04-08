@@ -331,66 +331,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ───────────────────────────────────────── */}
-      <section className="how-section">
-        <div className="section-inner">
-          <h2 className="section-title">How It Works</h2>
-          <div className="steps-row">
-
-            <div className="step">
-              <div className="step-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
-                  <circle cx="11" cy="11" r="7" stroke="#3B82F6" strokeWidth="2" />
-                  <path d="M21 21l-4.35-4.35" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div className="step-num">1</div>
-              <h3 className="step-title">Search</h3>
-              <p className="step-desc">Pick your niche and city</p>
-            </div>
-
-            <div className="step-connector" aria-hidden="true">
-              <svg width="36" height="14" viewBox="0 0 36 14" fill="none">
-                <path d="M0 7h32" stroke="#2a2a2a" strokeWidth="2" />
-                <path d="M26 1l6 6-6 6" stroke="#2a2a2a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-
-            <div className="step">
-              <div className="step-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
-                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="#3B82F6" strokeWidth="2" />
-                  <path d="M7 8h10M7 12h7M7 16h9" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div className="step-num">2</div>
-              <h3 className="step-title">Preview</h3>
-              <p className="step-desc">See 3 free leads instantly</p>
-            </div>
-
-            <div className="step-connector" aria-hidden="true">
-              <svg width="36" height="14" viewBox="0 0 36 14" fill="none">
-                <path d="M0 7h32" stroke="#2a2a2a" strokeWidth="2" />
-                <path d="M26 1l6 6-6 6" stroke="#2a2a2a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-
-            <div className="step">
-              <div className="step-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
-                  <path d="M12 3v13M7 12l5 5 5-5" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M4 20h16" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div className="step-num">3</div>
-              <h3 className="step-title">Download</h3>
-              <p className="step-desc">Pay once, get the full list as CSV</p>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
       {/* ── TOOL ───────────────────────────────────────────────── */}
       <section className="tool-section" ref={toolRef} id="tool">
         <div className="section-inner">
@@ -541,6 +481,65 @@ export default function App() {
         </div>
       </section>
 
+      {/* ── HOW IT WORKS ───────────────────────────────────────── */}
+      <section className="how-section">
+        <div className="section-inner">
+          <h2 className="section-title">How It Works</h2>
+          <div className="steps-row">
+
+            <div className="step">
+              <div className="step-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
+                  <circle cx="11" cy="11" r="7" stroke="#3B82F6" strokeWidth="2" />
+                  <path d="M21 21l-4.35-4.35" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div className="step-num">1</div>
+              <h3 className="step-title">Search</h3>
+              <p className="step-desc">Pick your niche and city</p>
+            </div>
+
+            <div className="step-connector" aria-hidden="true">
+              <svg width="36" height="14" viewBox="0 0 36 14" fill="none">
+                <path d="M0 7h32" stroke="#2a2a2a" strokeWidth="2" />
+                <path d="M26 1l6 6-6 6" stroke="#2a2a2a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+
+            <div className="step">
+              <div className="step-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
+                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="#3B82F6" strokeWidth="2" />
+                  <path d="M7 8h10M7 12h7M7 16h9" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div className="step-num">2</div>
+              <h3 className="step-title">Preview</h3>
+              <p className="step-desc">See 3 free leads instantly</p>
+            </div>
+
+            <div className="step-connector" aria-hidden="true">
+              <svg width="36" height="14" viewBox="0 0 36 14" fill="none">
+                <path d="M0 7h32" stroke="#2a2a2a" strokeWidth="2" />
+                <path d="M26 1l6 6-6 6" stroke="#2a2a2a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+
+            <div className="step">
+              <div className="step-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
+                  <path d="M12 3v13M7 12l5 5 5-5" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M4 20h16" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div className="step-num">3</div>
+              <h3 className="step-title">Download</h3>
+              <p className="step-desc">Pay once, get the full list as CSV</p>
+            </div>
+
+          </div>
+        </div>
+      </section>
 
       {/* ── FOOTER ─────────────────────────────────────────────── */}
       <footer className="footer">
