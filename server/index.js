@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3001;
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// In-memory cache: searchKey → array of full result objects
+// In-memory cache: searchKey → result object
 // TTL: 2 hours
 const cache = new Map();
 const CACHE_TTL_MS = 2 * 60 * 60 * 1000;
@@ -109,7 +109,7 @@ app.get('/api/search', async (req, res) => {
     });
 
     res.json({
-      preview: results.slice(0, 5),
+      preview: results.slice(0, 3),
       searchKey,
       total: results.length,
     });
@@ -121,25 +121,34 @@ app.get('/api/search', async (req, res) => {
 });
 
 // ─── Stripe Checkout ─────────────────────────────────────────────────────────
+const PLAN_PRICES = {
+  starter: { amount: 500,  label: 'Starter' },
+  pro:     { amount: 1900, label: 'Pro' },
+  agency:  { amount: 4900, label: 'Agency' },
+};
+
 app.post('/api/checkout', async (req, res) => {
-  const { searchKey, niche, city, state } = req.body;
+  const { searchKey, niche, city, state, plan } = req.body;
 
   if (!searchKey || !cache.has(searchKey)) {
     return res.status(400).json({ error: 'Search results expired. Please search again.' });
   }
 
+  const planId = plan && PLAN_PRICES[plan] ? plan : 'starter';
+  const { amount, label } = PLAN_PRICES[planId];
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      allow_promotion_codes: true,
       line_items: [
         {
           price_data: {
             currency: 'usd',
-            unit_amount: 500, // $5.00
+            unit_amount: amount,
             product_data: {
-              name: `${niche} leads — ${city}, ${state}`,
+              name: `LocalLeadPull ${label} — ${niche} in ${city}, ${state}`,
               description: `Full CSV of local ${niche} businesses in ${city}, ${state}`,
             },
           },
@@ -147,7 +156,7 @@ app.post('/api/checkout', async (req, res) => {
         },
       ],
       mode: 'payment',
-      metadata: { searchKey },
+      metadata: { searchKey, plan: planId },
       success_url: `${clientUrl}?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientUrl}?canceled=true`,
     });
@@ -159,7 +168,7 @@ app.post('/api/checkout', async (req, res) => {
   }
 });
 
-// ─── Download CSV ─────────────────────────────────────────────────────────────
+// ─── Download CSV (post-payment) ─────────────────────────────────────────────
 app.get('/api/download', async (req, res) => {
   const { session_id } = req.query;
 
@@ -182,32 +191,52 @@ app.get('/api/download', async (req, res) => {
     }
 
     const { results, niche, city, state } = cache.get(searchKey);
-
-    const csvRows = [
-      ['Business Name', 'Phone', 'Website', 'Google Rating', 'Reviews', 'Address'],
-      ...results.map(r => [
-        `"${(r.name || '').replace(/"/g, '""')}"`,
-        `"${(r.phone || '').replace(/"/g, '""')}"`,
-        `"${(r.website || '').replace(/"/g, '""')}"`,
-        r.rating != null ? r.rating : '',
-        r.reviewCount != null ? r.reviewCount : '',
-        `"${(r.address || '').replace(/"/g, '""')}"`,
-      ]),
-    ];
-
-    const csv = csvRows.map(row => row.join(',')).join('\r\n');
-    const filename = `${niche}-${city}-${state}-leads.csv`
-      .toLowerCase()
-      .replace(/\s+/g, '-');
-
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(csv);
+    sendCsv(res, results, niche, city, state);
   } catch (err) {
     console.error('Download error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
+// ─── Admin Download (bypass Stripe) ─────────────────────────────────────────
+app.get('/api/admin-download', (req, res) => {
+  const { search_key, admin } = req.query;
+
+  if (admin !== 'localleadpull2026') {
+    return res.status(403).json({ error: 'Forbidden.' });
+  }
+
+  if (!search_key || !cache.has(search_key)) {
+    return res.status(400).json({ error: 'Search results not found or expired.' });
+  }
+
+  const { results, niche, city, state } = cache.get(search_key);
+  sendCsv(res, results, niche, city, state);
+});
+
+// ─── CSV helper ──────────────────────────────────────────────────────────────
+function sendCsv(res, results, niche, city, state) {
+  const csvRows = [
+    ['Business Name', 'Phone', 'Website', 'Google Rating', 'Reviews', 'Address'],
+    ...results.map(r => [
+      `"${(r.name || '').replace(/"/g, '""')}"`,
+      `"${(r.phone || '').replace(/"/g, '""')}"`,
+      `"${(r.website || '').replace(/"/g, '""')}"`,
+      r.rating != null ? r.rating : '',
+      r.reviewCount != null ? r.reviewCount : '',
+      `"${(r.address || '').replace(/"/g, '""')}"`,
+    ]),
+  ];
+
+  const csv = csvRows.map(row => row.join(',')).join('\r\n');
+  const filename = `${niche}-${city}-${state}-leads.csv`
+    .toLowerCase()
+    .replace(/\s+/g, '-');
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(csv);
+}
 
 app.listen(PORT, () => {
   console.log(`LocalLeadPull server running on http://localhost:${PORT}`);
