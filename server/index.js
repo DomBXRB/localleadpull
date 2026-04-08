@@ -138,6 +138,11 @@ app.post('/api/checkout', async (req, res) => {
   const { amount, label } = PLAN_PRICES[planId];
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
+  const { results } = cache.get(searchKey);
+  if (results.length <= 3) {
+    return res.status(400).json({ error: 'No additional leads to unlock.' });
+  }
+
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -148,7 +153,7 @@ app.post('/api/checkout', async (req, res) => {
             currency: 'usd',
             unit_amount: amount,
             product_data: {
-              name: `LocalLeadPull ${label} — ${niche} in ${city}, ${state}`,
+              name: `LocalLeadPull ${label} — ${niche} in ${city}, ${state} (${results.length} leads)`,
               description: `Full CSV of local ${niche} businesses in ${city}, ${state}`,
             },
           },

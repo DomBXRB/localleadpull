@@ -545,6 +545,18 @@ body {
   color: rgba(255,255,255,.7);
 }
 
+/* ─── Inline Pricing (post-results) ────────────────────────────────────── */
+.inline-pricing {
+  margin-top: 8px;
+}
+.inline-pricing-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 28px;
+  color: #fff;
+}
+
 /* ─── Pricing Section ───────────────────────────────────────────────────── */
 .pricing-section {
   background: #111;

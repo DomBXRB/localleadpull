@@ -21,7 +21,6 @@ const PLANS = [
     id: 'starter',
     name: 'Starter',
     price: 5,
-    pulls: 1,
     leads: 20,
     savings: null,
     features: ['Single niche + city', 'CSV download', 'Instant delivery'],
@@ -30,7 +29,6 @@ const PLANS = [
     id: 'pro',
     name: 'Pro',
     price: 19,
-    pulls: 5,
     leads: 100,
     savings: 24,
     features: ['Any niche + city', 'CSV download', 'Instant delivery', 'Save 24%'],
@@ -40,7 +38,6 @@ const PLANS = [
     id: 'agency',
     name: 'Agency',
     price: 49,
-    pulls: 20,
     leads: 400,
     savings: 51,
     features: ['Any niche + city', 'CSV download', 'Instant delivery', 'Save 51%'],
@@ -247,6 +244,10 @@ export default function App() {
 
   async function handleCheckout(planId) {
     const plan = planId || selectedPlan;
+    if (totalCount <= 3) {
+      setError('No additional leads to unlock.');
+      return;
+    }
     if (!searchKey) {
       toolRef.current?.scrollIntoView({ behavior: 'smooth' });
       return;
@@ -457,19 +458,9 @@ export default function App() {
                   <h2 className="results-title">{niche} in {city}, {state}</h2>
                   <p className="results-sub">Showing 3 of {totalCount} results</p>
                 </div>
-                {isAdmin ? (
+                {isAdmin && (
                   <button className="btn btn--primary" onClick={handleAdminDownload}>
                     Download CSV (Admin)
-                  </button>
-                ) : (
-                  <button
-                    className="btn btn--cta"
-                    onClick={() => handleCheckout('starter')}
-                    disabled={checkoutLoading}
-                  >
-                    {checkoutLoading
-                      ? <span className="btn-inner"><span className="spinner spinner--white" />Redirecting…</span>
-                      : <><span>Download Full CSV</span><span className="price-badge">$5</span></>}
                   </button>
                 )}
               </div>
@@ -493,22 +484,44 @@ export default function App() {
               </div>
 
               {totalCount > 3 && !isAdmin && (
-                <div className="cta-banner">
-                  <div className="cta-banner-body">
-                    <p className="cta-banner-headline">
-                      <strong>{totalCount - 3} more leads</strong> ready to download
-                    </p>
-                    <p className="cta-banner-sub">
-                      Get every result — name, phone, website, rating — as a clean CSV
-                    </p>
+                <div className="inline-pricing">
+                  <h3 className="inline-pricing-title">Unlock all {totalCount} leads</h3>
+                  <div className="pricing-grid">
+                    {PLANS.map(plan => (
+                      <div
+                        key={plan.id}
+                        className={`pricing-card${plan.featured ? ' pricing-card--featured' : ''}`}
+                      >
+                        {plan.savings && (
+                          <div className="savings-badge">Save {plan.savings}%</div>
+                        )}
+                        <div className="plan-header">
+                          <div className="plan-price">
+                            <span className="plan-dollar">$</span>{plan.price}
+                          </div>
+                          <div className="plan-name">{plan.name}</div>
+                          <div className="plan-meta">{plan.leads} leads</div>
+                        </div>
+                        <ul className="plan-features">
+                          {plan.features.map((f, i) => (
+                            <li key={i}>
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="check-icon" aria-hidden="true">
+                                <path d="M3 8l3.5 3.5L13 5" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                        <button
+                          className="btn btn--primary plan-btn"
+                          onClick={() => handleCheckout(plan.id)}
+                          disabled={checkoutLoading}
+                        >
+                          {checkoutLoading && selectedPlan === plan.id ? 'Redirecting…' : 'Buy Now'}
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                  <button
-                    className="btn btn--cta-white"
-                    onClick={() => handleCheckout('starter')}
-                    disabled={checkoutLoading}
-                  >
-                    {checkoutLoading ? 'Redirecting…' : 'Get Full List — $5'}
-                  </button>
                 </div>
               )}
             </div>
@@ -534,9 +547,7 @@ export default function App() {
                     <span className="plan-dollar">$</span>{plan.price}
                   </div>
                   <div className="plan-name">{plan.name}</div>
-                  <div className="plan-meta">
-                    {plan.pulls} pull{plan.pulls > 1 ? 's' : ''} · {plan.leads} leads
-                  </div>
+                  <div className="plan-meta">{plan.leads} leads</div>
                 </div>
                 <ul className="plan-features">
                   {plan.features.map((f, i) => (
